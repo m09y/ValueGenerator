@@ -26,10 +26,11 @@ class ValueGenerator
     T curValue;
     T maxLimit;
     T minLimit;
+    T maxAllowedLimit;
     int maxRangeIndex;
     int minRangeIndex;
     int curIndex;
-    RANDOMIZER_TYPE valRandomizerType;
+    RANDOMIZER_TYPE valRandomizerType = RANDOMIZER_TYPE::POWEROF02;
 public:
     ValueGenerator();
     T CurVal();
@@ -58,10 +59,11 @@ void ValueGenerator<T>::Reset()
 {
     minLimit = std::numeric_limits<T>::min();
     maxLimit = std::numeric_limits<T>::max();
+    maxAllowedLimit = maxLimit - 1;
     maxRangeIndex = std::numeric_limits<T>::digits;
     minRangeIndex = (true == std::is_signed<T>::value) ? (-1 * maxRangeIndex) : 0;
     curIndex = minRangeIndex;
-    curValue = minLimit;
+    curValue = minLimit; 
     return;
 }
 
@@ -74,20 +76,29 @@ T ValueGenerator<T>::CurVal()
 template<typename T>
 T ValueGenerator<T>::NextVal()
 {
-    T nextVal;
-    switch(valRandomizerType)
+    if(true == std::is_integral<T>::value)
     {
-        case RANDOMIZER_TYPE::POWEROF02: nextVal = GeneratePowerOfN(2);break;
-        case RANDOMIZER_TYPE::POWEROF03: nextVal = GeneratePowerOfN(3);break;
-        case RANDOMIZER_TYPE::POWEROF04: nextVal = GeneratePowerOfN(4);break;
-        case RANDOMIZER_TYPE::POWEROF05: nextVal = GeneratePowerOfN(5);break;
-        case RANDOMIZER_TYPE::POWEROF08: nextVal = GeneratePowerOfN(8);break;
-        case RANDOMIZER_TYPE::POWEROF10: nextVal = GeneratePowerOfN(10);break;
-        case RANDOMIZER_TYPE::POWEROF16: nextVal = GeneratePowerOfN(16);break;
-        case RANDOMIZER_TYPE::POWEROF32: nextVal = GeneratePowerOfN(32);break;
-        case RANDOMIZER_TYPE::POWEROF64: nextVal = GeneratePowerOfN(64);break;
+        T nextVal = 0;
+        switch(valRandomizerType)
+        {
+            case RANDOMIZER_TYPE::POWEROF02: nextVal = GeneratePowerOfN(2);break;
+            case RANDOMIZER_TYPE::POWEROF03: nextVal = GeneratePowerOfN(3);break;
+            case RANDOMIZER_TYPE::POWEROF04: nextVal = GeneratePowerOfN(4);break;
+            case RANDOMIZER_TYPE::POWEROF05: nextVal = GeneratePowerOfN(5);break;
+            case RANDOMIZER_TYPE::POWEROF08: nextVal = GeneratePowerOfN(8);break;
+            case RANDOMIZER_TYPE::POWEROF10: nextVal = GeneratePowerOfN(10);break;
+            case RANDOMIZER_TYPE::POWEROF16: nextVal = GeneratePowerOfN(16);break;
+            case RANDOMIZER_TYPE::POWEROF32: nextVal = GeneratePowerOfN(32);break;
+            case RANDOMIZER_TYPE::POWEROF64: nextVal = GeneratePowerOfN(64);break;
+        }
+        return nextVal;
     }
-    return nextVal;
+    else
+    {
+        //Boolean type
+        T nextVal = true;
+        return nextVal;
+    }
 }
 
 template<typename T>
@@ -100,17 +111,11 @@ template<typename T>
 T ValueGenerator<T>::GeneratePowerOfN(const unsigned int N)
 {
     //Signed Value
-    if ((true == std::is_signed<T>::value) && (curValue < -1))
+    if ((true == std::is_signed<T>::value) && (curValue < 0))
     {
         curValue = curValue / N;
         ++curIndex;
     }
-    else if ((true == std::is_signed<T>::value) && (curValue == -1))
-    {
-        curValue = 0;
-        curIndex = 0;
-    }
-    //Signed/Unsigned
     else if (curValue == 0)
     {
         curValue = 1;
@@ -118,10 +123,13 @@ T ValueGenerator<T>::GeneratePowerOfN(const unsigned int N)
     }
     else if (curValue > 0)
     {
-        ++curIndex;
-        if (curIndex >= maxRangeIndex)
+        if (curValue == maxAllowedLimit)
         {
             curValue = maxLimit;
+        }
+        else if (curValue >= (maxLimit/N))
+        {
+            curValue = maxAllowedLimit;
         }
         else
         {
